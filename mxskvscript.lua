@@ -1,4 +1,4 @@
-﻿-- ==========================================
+-- ==========================================
 -- М А Г Н У С  Н А Г Н У С   2 4 / 7 (FIXED BY MXSKV) сука сложно было тебе норм фикс сделать пидарас
 -- Фарм через ХОТБАР (2 = зелёные, 3 = жёлтые)
 -- + Anti-AFK + Бесконечный цикл (без реджойна)
@@ -72,7 +72,7 @@ local PRE_FARM_TP = Vector3.new(27610.05, 16.65, -8107.77)
 local PRE_FARM_WAIT = 1
 local TP_SETTLE  = 0.80
 local DELAY      = 0.10
-local GREEN_MAX_Y = -60
+local GREEN_MAX_Y = -30
 
 local GREEN_KEY = Enum.KeyCode.Two
 local YELLOW_KEY = Enum.KeyCode.Three
@@ -577,3 +577,4 @@ if spot then
 else
     warn("[Magnus] PlaceId " .. game.PlaceId .. " не найден в WORLD_SPOTS")
 end
+
