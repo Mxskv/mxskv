@@ -1,13 +1,3 @@
--- ==========================================
--- M A G N U S   2 4 / 7
--- Фарм через ХОТБАР (2 = зелёные, 3 = жёлтые)
--- + Anti-AFK + Бесконечный цикл (без реджойна)
--- Fixed by Mxskv
--- ==========================================
-
--- =====================
--- ===== ЖДЁМ ВСЁ =====
--- =====================
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
@@ -16,27 +6,19 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 repeat task.wait(0.5) until Players.LocalPlayer
 local LocalPlayer = Players.LocalPlayer
 
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
+if not game:IsLoaded() then game.Loaded:Wait() end
 
 repeat task.wait(0.5) until LocalPlayer.Character
 repeat task.wait(0.5) until LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-
 repeat task.wait(0.5) until ReplicatedStorage:FindFirstChild("Library")
-local Library = ReplicatedStorage:FindFirstChild("Library")
 
+local Library = ReplicatedStorage:FindFirstChild("Library")
 repeat task.wait(0.5) until Library:FindFirstChild("Client")
 local Client = Library:FindFirstChild("Client")
-
 repeat task.wait(0.5) until Client:FindFirstChild("Save")
-
 repeat task.wait(0.5) until ReplicatedStorage:FindFirstChild("Network")
 local Network = ReplicatedStorage:FindFirstChild("Network")
 
--- =====================
--- ===== ANTI-AFK =====
--- =====================
 task.spawn(function()
     LocalPlayer.Idled:Connect(function()
         pcall(function()
@@ -64,9 +46,6 @@ task.spawn(function()
     end)
 end)
 
--- =====================
--- ===== НАСТРОЙКИ =====
--- =====================
 local LOAD_WAIT  = 10
 local EVENT_WAIT = 6
 local PRE_FARM_TP = Vector3.new(27610.05, 16.65, -8107.77)
@@ -81,38 +60,25 @@ local YELLOW_KEY = Enum.KeyCode.Three
 local ORE_ID     = "Eclipse Onyx Gem"
 local ORE_NAME   = "Eclipse Onyx"
 
--- 🔄 Порог «резкого падения» Y для определения рестарта
--- Подстрой под свою шахту: если слоёв мало → 20, если много → 50-100
-local RESTART_Y_THRESHOLD = 50
+local RESTART_Y_GAP = 10
 
--- =====================
--- ===== ТОЧКИ ИВЕНТА =====
--- =====================
 local WORLD_SPOTS = {
-    [8737899170]      = {name = "Мир 1",  pos = Vector3.new(179.04, 16.24, -142.15)},
-    [16498369169]     = {name = "Мир 2", pos = Vector3.new(-9954.08, 16.54, -287.74)},
-    [17503543197]     = {name = "Мир 3", pos = Vector3.new(-10256.35, 4.17, -7300.98)},
-    [140403681187145] = {name = "Мир 4", pos = Vector3.new(-15848.54, 39.92, -193.16)},
+    [8737899170]      = {pos = Vector3.new(179.04, 16.24, -142.15)},
+    [16498369169]     = {pos = Vector3.new(-9954.08, 16.54, -287.74)},
+    [17503543197]     = {pos = Vector3.new(-10256.35, 4.17, -7300.98)},
+    [140403681187145] = {pos = Vector3.new(-15848.54, 39.92, -193.16)},
 }
 
--- =====================
--- ===== МОДУЛИ =====
--- =====================
 local Save = require(Client.Save)
 local Blocks = require(Library.Types.Blocks)
 local BlockWorldClient = require(Client.ToolCmds.BlockWorldClient)
 
--- =====================
--- ===== ПОДСЧЁТ =====
--- =====================
 local function countBombs(bombType)
     local data = Save.Get()
-    if not data or not data.Inventory or not data.Inventory.Consumable then
-        return 0
-    end
+    if not data or not data.Inventory or not data.Inventory.Consumable then return 0 end
     local targetId = (bombType == "green") and "Drill Array" or "Core Charge"
     local total = 0
-    for uid, core in pairs(data.Inventory.Consumable) do
+    for _, core in pairs(data.Inventory.Consumable) do
         if core.id == targetId then
             total = total + (core._am or core.amount or core.count or 1)
         end
@@ -122,21 +88,14 @@ end
 
 local function countOre()
     local data = Save.Get()
-    if not data or not data.Inventory or not data.Inventory.Misc then
-        return 0
-    end
+    if not data or not data.Inventory or not data.Inventory.Misc then return 0 end
     local total = 0
-    for uid, item in pairs(data.Inventory.Misc) do
-        if item.id == ORE_ID then
-            total = total + (item._am or 1)
-        end
+    for _, item in pairs(data.Inventory.Misc) do
+        if item.id == ORE_ID then total = total + (item._am or 1) end
     end
     return total
 end
 
--- =====================
--- ===== ЖДЁМ ИНВЕНТАРЬ =====
--- =====================
 repeat task.wait(0.5) until Save.Get() and Save.Get().Inventory and Save.Get().Inventory.Consumable
 task.wait(2)
 
@@ -145,9 +104,6 @@ local START_YELLOW = countBombs("yellow")
 local START_ORE    = countOre()
 local START_TIME   = tick()
 
--- =====================
--- ===== GUI PARENT =====
--- =====================
 local function getGuiParent()
     if gethui then
         local ok, res = pcall(gethui)
@@ -156,9 +112,6 @@ local function getGuiParent()
     return LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- =====================
--- ===== ГУИ =====
--- =====================
 local OWNER_USER_ID   = 11205845971
 local LINE_1          = "[B1ZE]"
 local LINE_2          = "By Magnus_Ocean77"
@@ -430,9 +383,6 @@ task.spawn(function()
     end
 end)
 
--- =====================
--- ===== ХОТБАР ФУНКЦИЯ =====
--- =====================
 local function pressKey(key)
     pcall(function()
         VirtualInputManager:SendKeyEvent(true, key, false, game)
@@ -449,9 +399,6 @@ local function useBombHotbar(bombKey)
     end
 end
 
--- =====================
--- ===== ЛОГИКА =====
--- =====================
 local running = true
 
 local function getHRP()
@@ -469,9 +416,7 @@ end
 
 game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
     if gpe then return end
-    if input.KeyCode == Enum.KeyCode.T then
-        running = false
-    end
+    if input.KeyCode == Enum.KeyCode.T then running = false end
 end)
 
 local region, origin, startX, startZ, STEP, HEIGHT_OFFSET
@@ -479,8 +424,7 @@ local world = nil
 
 local function teleportToGrid(gridX, gridY, gridZ)
     local cf = Blocks.BlockCFrame(origin, Vector3int16.new(gridX, gridY, gridZ))
-    local target = cf.Position + Vector3.new(0, HEIGHT_OFFSET, 0)
-    teleportTo(target)
+    teleportTo(cf.Position + Vector3.new(0, HEIGHT_OFFSET, 0))
 end
 
 local function getBombKey(y)
@@ -496,7 +440,6 @@ local function findHighestYInColumn()
     return nil
 end
 
--- Ждём прогрузку мира после рестарта локации
 local function waitForWorld()
     local attempts = 0
     repeat
@@ -516,32 +459,43 @@ local function waitForWorld()
     return true
 end
 
--- =====================
--- ===== ОДИН ПРОХОД ФАРМА =====
--- =====================
+local function hasBlocksAtY(targetY)
+    for checkX = startX, region.Max.X - 1, STEP do
+        for checkZ = startZ, region.Max.Z - 1, STEP do
+            for checkY = targetY, targetY - 2, -1 do
+                if world:GetBlock(Vector3int16.new(checkX, checkY, checkZ)) then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
 local function farmOnce()
     world = nil
     if not waitForWorld() then return false end
 
-    -- Запоминаем самый верхний Y при заходе в шахту
-    local firstY = findHighestYInColumn()
-    if not firstY then
-        print("[Magnus] Шахта пустая при входе")
-        return true
-    end
-    print("[Magnus] Заход в шахту. Первый Y:", firstY)
+    local farmedY = {}
+    local highestFarmedY = nil
 
     while running do
         local y = findHighestYInColumn()
         if not y then
-            print("[Magnus] Блоки кончились — выходим")
+            teleportTo(PRE_FARM_TP)
             return true
         end
 
-        -- 🔄 Рестарт: верхний блок резко упал ниже первого
-        if firstY - y > RESTART_Y_THRESHOLD then
-            print(string.format("[Magnus] Рестарт (Y %d → %d) — выходим", firstY, y))
-            return true
+        if highestFarmedY and (highestFarmedY - y) > RESTART_Y_GAP and not farmedY[y] then
+            if hasBlocksAtY(highestFarmedY) then
+                teleportTo(PRE_FARM_TP)
+                return true
+            end
+        end
+
+        farmedY[y] = true
+        if not highestFarmedY or y > highestFarmedY then
+            highestFarmedY = y
         end
 
         local bombKey = getBombKey(y)
@@ -551,22 +505,18 @@ local function farmOnce()
             for z = startZ, region.Max.Z - 1, STEP do
                 if not running then break end
 
-                -- 🔄 Проверка рестарта прямо перед бомбой
-                local currentY = findHighestYInColumn()
-                if not currentY or (firstY - currentY > RESTART_Y_THRESHOLD) then
-                    print("[Magnus] Рестарт во время прохода — выходим")
-                    return true
-                end
-
                 local block = world:GetBlock(Vector3int16.new(x, y, z))
                 if block then
                     if not getHRP() then task.wait(0.5) end
                     teleportToGrid(x, y, z)
                     task.wait(TP_SETTLE)
 
-                    -- 🔄 Ещё раз проверяем блок перед самой бомбой
-                    if not world:GetBlock(Vector3int16.new(x, y, z)) then
-                        print("[Magnus] Блок исчез перед бомбой — рестарт")
+                    local checkY = findHighestYInColumn()
+                    if highestFarmedY and checkY and
+                       (highestFarmedY - checkY) > RESTART_Y_GAP and
+                       not farmedY[checkY] and
+                       hasBlocksAtY(highestFarmedY) then
+                        teleportTo(PRE_FARM_TP)
                         return true
                     end
 
@@ -580,44 +530,29 @@ local function farmOnce()
     return true
 end
 
--- =====================
--- ===== ЗАПУСК (БЕСКОНЕЧНЫЙ ЦИКЛ) =====
--- =====================
 for i = LOAD_WAIT, 1, -1 do
     task.wait(1)
 end
 
 local spot = WORLD_SPOTS[game.PlaceId]
 if spot then
-    -- Первый заход в ивент
     teleportTo(spot.pos)
     task.wait(EVENT_WAIT)
     teleportTo(PRE_FARM_TP)
     task.wait(PRE_FARM_WAIT)
 
-    -- ♾️ БЕСКОНЕЧНЫЙ ЦИКЛ:
-    --   1) farmOnce фармит
-    --   2) при рестарте farmOnce завершается
-    --   3) возврат наверх (PRE_FARM_TP)
-    --   4) ждём новую шахту через waitForWorld (внутри farmOnce)
-    --   5) повтор
     while running do
         local ok, err = pcall(farmOnce)
-
         if not ok then
-            warn("[Magnus] Ошибка в farmOnce:", err)
+            warn("[Magnus] Ошибка:", err)
             task.wait(2)
         end
 
         if running then
-            print("[Magnus] Возврат наверх, ждём новую шахту...")
             teleportTo(PRE_FARM_TP)
             task.wait(PRE_FARM_WAIT)
         end
     end
-
-    print("[Magnus] Остановлено пользователем (клавиша T)")
 else
-    warn("[Magnus] PlaceId " .. game.PlaceId .. " не найден в WORLD_SPOTS")
+    warn("[Magnus] PlaceId не найден в WORLD_SPOTS")
 end
-
