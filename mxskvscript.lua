@@ -1,7 +1,8 @@
 -- ==========================================
--- М А Г Н У С   2 4 / 7 (FIXED BY MXSKV)
+-- M A G N U S   2 4 / 7
 -- Фарм через ХОТБАР (2 = зелёные, 3 = жёлтые)
 -- + Anti-AFK + Бесконечный цикл (без реджойна)
+-- Fixed by Mxskv
 -- ==========================================
 
 -- =====================
@@ -79,6 +80,10 @@ local YELLOW_KEY = Enum.KeyCode.Three
 
 local ORE_ID     = "Eclipse Onyx Gem"
 local ORE_NAME   = "Eclipse Onyx"
+
+-- 🔄 Порог «резкого падения» Y для определения рестарта
+-- Подстрой под свою шахту: если слоёв мало → 20, если много → 50-100
+local RESTART_Y_THRESHOLD = 50
 
 -- =====================
 -- ===== ТОЧКИ ИВЕНТА =====
@@ -511,15 +516,31 @@ local function waitForWorld()
     return true
 end
 
--- Один проход фарма (до конца текущей локации)
+-- =====================
+-- ===== ОДИН ПРОХОД ФАРМА =====
+-- =====================
 local function farmOnce()
     world = nil
     if not waitForWorld() then return false end
 
+    -- Запоминаем самый верхний Y при заходе в шахту
+    local firstY = findHighestYInColumn()
+    if not firstY then
+        print("[Magnus] Шахта пустая при входе")
+        return true
+    end
+    print("[Magnus] Заход в шахту. Первый Y:", firstY)
+
     while running do
         local y = findHighestYInColumn()
         if not y then
-            -- Блоков нет — локация рестартнула, возвращаемся в главный цикл
+            print("[Magnus] Блоки кончились — выходим")
+            return true
+        end
+
+        -- 🔄 Рестарт: верхний блок резко упал ниже первого
+        if firstY - y > RESTART_Y_THRESHOLD then
+            print(string.format("[Magnus] Рестарт (Y %d → %d) — выходим", firstY, y))
             return true
         end
 
@@ -530,11 +551,25 @@ local function farmOnce()
             for z = startZ, region.Max.Z - 1, STEP do
                 if not running then break end
 
+                -- 🔄 Проверка рестарта прямо перед бомбой
+                local currentY = findHighestYInColumn()
+                if not currentY or (firstY - currentY > RESTART_Y_THRESHOLD) then
+                    print("[Magnus] Рестарт во время прохода — выходим")
+                    return true
+                end
+
                 local block = world:GetBlock(Vector3int16.new(x, y, z))
                 if block then
                     if not getHRP() then task.wait(0.5) end
                     teleportToGrid(x, y, z)
                     task.wait(TP_SETTLE)
+
+                    -- 🔄 Ещё раз проверяем блок перед самой бомбой
+                    if not world:GetBlock(Vector3int16.new(x, y, z)) then
+                        print("[Magnus] Блок исчез перед бомбой — рестарт")
+                        return true
+                    end
+
                     useBombHotbar(bombKey)
                     task.wait(DELAY)
                 end
@@ -546,7 +581,7 @@ local function farmOnce()
 end
 
 -- =====================
--- ===== ЗАПУСК =====
+-- ===== ЗАПУСК (БЕСКОНЕЧНЫЙ ЦИКЛ) =====
 -- =====================
 for i = LOAD_WAIT, 1, -1 do
     task.wait(1)
@@ -554,22 +589,30 @@ end
 
 local spot = WORLD_SPOTS[game.PlaceId]
 if spot then
+    -- Первый заход в ивент
     teleportTo(spot.pos)
     task.wait(EVENT_WAIT)
     teleportTo(PRE_FARM_TP)
     task.wait(PRE_FARM_WAIT)
 
-    -- ♾️ Бесконечный цикл фарма — переживает любые рестарты локации
+    -- ♾️ БЕСКОНЕЧНЫЙ ЦИКЛ:
+    --   1) farmOnce фармит
+    --   2) при рестарте farmOnce завершается
+    --   3) возврат наверх (PRE_FARM_TP)
+    --   4) ждём новую шахту через waitForWorld (внутри farmOnce)
+    --   5) повтор
     while running do
         local ok, err = pcall(farmOnce)
 
         if not ok then
-            warn("[Magnus] Ошибка в цикле фарма:", err)
+            warn("[Magnus] Ошибка в farmOnce:", err)
             task.wait(2)
         end
 
         if running then
-            task.wait(1)
+            print("[Magnus] Возврат наверх, ждём новую шахту...")
+            teleportTo(PRE_FARM_TP)
+            task.wait(PRE_FARM_WAIT)
         end
     end
 
