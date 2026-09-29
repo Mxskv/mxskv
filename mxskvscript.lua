@@ -54,13 +54,14 @@ local TP_SETTLE  = 0.80
 local DELAY      = 0.10
 local GREEN_MAX_Y = -30
 
+local RESTART_Y_GAP = 10
+local RESTART_CHECK_FROM_Y = -30
+
 local GREEN_KEY = Enum.KeyCode.Two
 local YELLOW_KEY = Enum.KeyCode.Three
 
 local ORE_ID     = "Eclipse Onyx Gem"
 local ORE_NAME   = "Eclipse Onyx"
-
-local RESTART_Y_GAP = 10
 
 local WORLD_SPOTS = {
     [8737899170]      = {pos = Vector3.new(179.04, 16.24, -142.15)},
@@ -459,25 +460,14 @@ local function waitForWorld()
     return true
 end
 
-local function hasBlocksAtY(targetY)
-    for checkX = startX, region.Max.X - 1, STEP do
-        for checkZ = startZ, region.Max.Z - 1, STEP do
-            for checkY = targetY, targetY - 2, -1 do
-                if world:GetBlock(Vector3int16.new(checkX, checkY, checkZ)) then
-                    return true
-                end
-            end
-        end
-    end
-    return false
-end
-
 local function farmOnce()
     world = nil
     if not waitForWorld() then return false end
 
-    local farmedY = {}
-    local highestFarmedY = nil
+    local lastFarmedY = findHighestYInColumn()
+    if not lastFarmedY then return true end
+
+    local bombCounter = 0
 
     while running do
         local y = findHighestYInColumn()
@@ -486,17 +476,13 @@ local function farmOnce()
             return true
         end
 
-        if highestFarmedY and (highestFarmedY - y) > RESTART_Y_GAP and not farmedY[y] then
-            if hasBlocksAtY(highestFarmedY) then
-                teleportTo(PRE_FARM_TP)
-                return true
-            end
+        -- Рестарт: Y резко упал вниз (верхние блоки исчезли сами)
+        if (lastFarmedY - y) > RESTART_Y_GAP and y < RESTART_CHECK_FROM_Y then
+            teleportTo(PRE_FARM_TP)
+            return true
         end
 
-        farmedY[y] = true
-        if not highestFarmedY or y > highestFarmedY then
-            highestFarmedY = y
-        end
+        lastFarmedY = y
 
         local bombKey = getBombKey(y)
 
@@ -511,13 +497,14 @@ local function farmOnce()
                     teleportToGrid(x, y, z)
                     task.wait(TP_SETTLE)
 
-                    local checkY = findHighestYInColumn()
-                    if highestFarmedY and checkY and
-                       (highestFarmedY - checkY) > RESTART_Y_GAP and
-                       not farmedY[checkY] and
-                       hasBlocksAtY(highestFarmedY) then
-                        teleportTo(PRE_FARM_TP)
-                        return true
+                    bombCounter = bombCounter + 1
+                    if bombCounter % 10 == 0 then
+                        local checkY = findHighestYInColumn()
+                        if checkY and (lastFarmedY - checkY) > RESTART_Y_GAP 
+                           and checkY < RESTART_CHECK_FROM_Y then
+                            teleportTo(PRE_FARM_TP)
+                            return true
+                        end
                     end
 
                     useBombHotbar(bombKey)
